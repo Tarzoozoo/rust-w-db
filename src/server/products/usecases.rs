@@ -1,7 +1,7 @@
 use tokio_postgres::Client;
 
 // Business logic for interating with the data or services 
-use super::entities;
+use super::entities; // link the file as a module 
 
 pub fn find_one_product(product_id: i32) -> entities::Result<entities::Product, String> {
     let mut products: Vec<entities::Product> = Vec::new();
@@ -29,6 +29,10 @@ pub fn find_one_product(product_id: i32) -> entities::Result<entities::Product, 
     }
     entities::Result::Err(format!("product_id: {} not found", product_id))
 }
+
+// pub async fn fetch_all_products(client: &Client) -> Vec<entities::Robot> {
+
+// }
 
 
 // pub async fn fetch_all_products(client: &Client) -> Vec<entities::Robot> {

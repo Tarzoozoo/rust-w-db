@@ -4,16 +4,23 @@ use std::sync::Arc;
 use axum::{
     response::{Json, IntoResponse}, // utilities for constructing HTTP responses
     extract::{Path, State}, // extracting data from HTTP requests
-    http::{StatusCode},
+    http::StatusCode,
 };
-use serde_json::json;
-use tokio_postgres::Client;
+use serde::ser::Error;
+use serde_json::json; // json macro
+use tokio_postgres::Client; // represent a connection to PostgreSQL
 
-use super::entities;
+use super::entities; // Refference an already declared module from the parent
 use super::usecases;
 
 // Handler function that handle HTTP requests (API)
 pub async fn find_one_product(Path(product_id): Path<i32>) -> impl IntoResponse {
+
+    /*
+    Input = Path: Extracts path parameters from the URL
+    Return = Something that implement the IntoResponse trait
+    */
+    
     let product_id_int = product_id.abs();
     match usecases::find_one_product(product_id_int) {
         // OK condition
@@ -33,22 +40,30 @@ pub async fn find_one_product(Path(product_id): Path<i32>) -> impl IntoResponse 
     }
 }
 
-// ???
-// pub async fn add_robot(Json(payload): Json<entities::Robot>) -> impl IntoResponse {
-    pub async fn add_robot(state: State<Arc<Client>>, Json(payload): Json<entities::Robot>) -> Json<String> {
+// pub async fn add_robot(state: State<Arc<Client>>, Json(payload): Json<entities::Robot>) -> Result<Json<String>, Box<dyn Error>> {
+pub async fn add_robot(state: State<Arc<Client>>, Json(payload): Json<entities::Robot>) -> Json<String> {
     println!(
         "Received robot: serial={}, name={}, organization={}, robot_type={}",
         payload.serial, payload.name, payload.organization, payload.robot_type
     ); 
-    let client = state.as_ref();
-    client.
+    let client = state.as_ref(); // Borrowing inner value.
+    let result = client.
         execute("INSERT INTO public.products
         (serial, name, organization, robot_type)
         VALUES ($1, $2, $3, $4)", 
         &[&payload.serial, &payload.name, 
         &payload.organization, &payload.robot_type])
         .await.unwrap();
-
+    
+    // Match result, when do not use unwrap
+    /* 
+    match result {
+        Ok(result) => {println!("{}", result);},
+        Err(e) => {
+            eprintln!("{}",e);
+        }
+    }
+    */
     Json("User created successfully".to_string())
 }
 
@@ -64,6 +79,8 @@ pub async fn get_robots(
             .query("SELECT id, serial, name, organization, robot_type
             FROM public.products", &[])
             .await.unwrap();
+
+    // Mapping query result
     let robots = rows
         .iter()
         .map(|row| entities::Robot {
@@ -94,10 +111,14 @@ pub async fn update_robot(
     println!("Received update_robot");
 
     let client = state.as_ref();
+
+    // Vectot to store SQL command(query) and input payload(params)
     let mut query = String::from("UPDATE public.products SET ");
+    // Create vector which any value that implements both ToSql and Sync
     let mut params: Vec<&(dyn tokio_postgres::types::ToSql + Sync)> = 
         Vec::new();
     
+    // Update SQL command and input payload
     if let Some(name) = &payload.name {
         query.push_str("name = $1, ");
         params.push(name);

@@ -32,6 +32,7 @@ pub async fn start() {
         }
     });
 
+    // Wrap client an Arc for sharing ownership
     let db_client = std::sync::Arc::new(client);
 
     let ex = Router::new()
@@ -45,12 +46,18 @@ pub async fn start() {
                         .delete(products::handlers::delete_robot));
     
 
-    // Combine all routes into the main router
+    /*
+        Combine all routes into the main router
+            - Nest each rounter under the "/" path
+            - Connect shared application (db_client) state to be be accrssible
+            by all route handlers
+    */
     let app = Router::new()
-        .nest("/products", ex) // Nest `products` routes under /products
-        .nest("/robot", robot)     // Nest `users` routes under /users
-        .with_state(db_client); // Add shared state
+        .nest("/products", ex)
+        .nest("/robot", robot)
+        .with_state(db_client);
 
+    // Setting up and running an Axum server
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     println!("server is running on -> {:?}", addr);
     axum::Server::bind(&addr)
