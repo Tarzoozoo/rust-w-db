@@ -1,5 +1,7 @@
-pub mod server;
+mod server;
+mod app;
 
-fn main() {
-    server::start();
+#[tokio::main]
+async fn main() {
+    server::start().await;
 }

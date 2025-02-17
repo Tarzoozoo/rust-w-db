@@ -6,9 +6,9 @@ use axum::{
 use serde_json::{json};
 use tokio_postgres::NoTls;
 
-pub mod products;
+use crate::app::products;
 
-#[tokio::main]
+
 pub async fn start() {
 
     // Connection parameters
